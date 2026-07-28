@@ -49,6 +49,13 @@
     display: grid; place-items: center; transition: .15s;
   }
   .icon-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .fs-fab {
+    position: fixed; right: 18px; bottom: 18px; z-index: 100;
+    width: 46px; height: 46px; border-radius: 50%;
+    box-shadow: var(--shadow); background: var(--accent); color: #fff; border: none;
+  }
+  .fs-fab:hover { filter: brightness(.95); }
+  @media (max-width: 760px) { .fs-fab { right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); } }
 
   /* Main */
   .main { flex: 1; min-width: 0; }
@@ -175,7 +182,6 @@
     <div class="brand">
       <span>🌿 工作台</span>
       <div class="brand-btns">
-        <button class="icon-btn" id="fsBtn" title="全屏 / 退出全屏">⛶</button>
         <button class="icon-btn" id="themeBtn" title="切换主题">🌙</button>
       </div>
     </div>
@@ -603,5 +609,6 @@
     });
   }
 </script>
+<button class="icon-btn fs-fab" id="fsBtn" title="全屏 / 退出全屏">⛶</button>
 </body>
 </html>
