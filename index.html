@@ -94,6 +94,10 @@
   .del { color: var(--muted); cursor: pointer; border: none; background: none; font-size: 16px; padding: 2px 6px; }
   .del:hover { color: var(--red); }
   .empty { color: var(--muted); font-size: 13px; padding: 10px 4px; }
+  .rec-date { flex: none; width: 92px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .rec-body { flex: 1; display: flex; flex-direction: column; gap: 2px; word-break: break-word; min-width: 0; }
+  .rec-name { font-size: 14px; font-weight: 600; }
+  .rec-note { font-size: 12px; color: var(--muted); }
 
   .note-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .note-head input[type="date"] { flex: none; max-width: 180px; }
@@ -176,15 +180,6 @@
   .tab { border: 1px solid var(--line); background: var(--card-2); color: var(--muted); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 14px; font-family: inherit; }
   .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .total { margin-top: 12px; font-size: 15px; } .total b { color: var(--accent); font-size: 18px; }
-  .recipe { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: var(--card-2); }
-  .rc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .rc-head b { font-size: 15px; } .rc-meta { font-size: 12px; color: var(--muted); }
-  .rc-ings { font-size: 13px; margin: 6px 0; color: var(--text); }
-  .rc-ings .hit { color: var(--green); font-style: normal; font-weight: 600; }
-  .rc-steps { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
-  .rc-steps li { margin: 2px 0; }
-  .rc-miss { font-size: 12px; color: var(--accent); margin-top: 4px; }
-  .foodk { width: 120px; flex: none; }
 
   footer { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
   footer .hint { color: var(--muted); font-size: 12px; margin-left: auto; }
@@ -219,7 +214,7 @@
       <button class="nav-item" data-view="todo">✅ 待办</button>
       <button class="nav-item" data-view="link">🔗 快捷链接</button>
       <button class="nav-item" data-view="habit">🌱 习惯打卡</button>
-      <button class="nav-item" data-view="diet">🍱 饮食</button>
+      <button class="nav-item" data-view="record">📁 收发文</button>
     </nav>
   </aside>
 
@@ -290,29 +285,24 @@
       </div>
     </section>
 
-    <!-- 饮食 -->
-    <section class="view card" data-view="diet">
-      <h2>🍱 饮食 <span class="tag">减脂助手</span></h2>
-      <div class="tabs" id="dietTabs">
-        <button class="tab active" data-tab="cal">热量计算</button>
-        <button class="tab" data-tab="recipe">减脂菜谱</button>
+    <!-- 收发文记录 -->
+    <section class="view card" data-view="record">
+      <h2>📁 收发文记录</h2>
+      <div class="tabs" id="recTabs">
+        <button class="tab active" data-tab="in">📥 收文</button>
+        <button class="tab" data-tab="out">📤 发文</button>
       </div>
-      <div id="calPanel">
-        <div class="add-row">
-          <input type="text" id="foodName" placeholder="食材名，如 鸡胸肉" />
-          <input type="number" id="foodGram" placeholder="克数" min="1" style="max-width:90px" />
-          <button class="btn" id="foodAdd">添加</button>
-        </div>
-        <ul class="list" id="foodList"></ul>
-        <div class="total">总热量：<b id="calTotal">0</b> kcal</div>
+      <div class="add-row">
+        <input type="date" id="recDate" style="max-width:150px" />
+        <input type="text" id="recName" placeholder="文件名" />
+        <input type="text" id="recNote" placeholder="备注" style="flex:1" />
+        <button class="btn" id="recAdd">添加</button>
       </div>
-      <div id="recipePanel" style="display:none">
-        <div class="add-row">
-          <input type="text" id="ingInput" placeholder="输入你有的食材，空格或逗号分隔，如 鸡胸肉 西兰花 鸡蛋" />
-          <button class="btn" id="genRecipe">生成菜谱</button>
-        </div>
-        <div id="recipeOut"></div>
+      <div class="add-row">
+        <input type="search" id="recSearch" placeholder="🔍 搜索文件名或备注…" style="flex:1" />
       </div>
+      <ul class="list" id="recList"></ul>
+      <div class="total">共 <b id="recCount">0</b> 条</div>
     </section>
 
     <footer>
@@ -328,7 +318,7 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  var KEY = { todo: "wb_todo", note: "wb_note", link: "wb_link", habit: "wb_habit", habitList: "wb_habitlist", habitColors: "wb_habitcolors", habitIcons: "wb_habiticons", theme: "wb_theme", view: "wb_view", dot: "wb_dot", food: "wb_food" };
+  var KEY = { todo: "wb_todo", note: "wb_note", link: "wb_link", habit: "wb_habit", habitList: "wb_habitlist", habitColors: "wb_habitcolors", habitIcons: "wb_habiticons", theme: "wb_theme", view: "wb_view", dot: "wb_dot", record: "wb_record" };
   var DEF_HABITS = ["喝水", "运动", "阅读", "早睡"];
   var WK = ["周日","周一","周二","周三","周四","周五","周六"];
 
@@ -618,97 +608,61 @@
   });
   renderHabitList(); renderMonth();
 
-  // ===== 饮食板块 =====
-  var FOOD_KCAL = { "鸡胸肉":133,"鸡腿肉":121,"鸡蛋":144,"蛋白":60,"牛肉(瘦)":106,"牛里脊":125,"猪肉(瘦)":143,"虾":99,"三文鱼":139,"鳕鱼":88,"金枪鱼":116,"豆腐":76,"黄豆":359,"毛豆":131,"牛奶":54,"脱脂牛奶":34,"无糖酸奶":59,"燕麦":389,"糙米":111,"米饭":116,"红薯":99,"紫薯":86,"玉米":112,"全麦面包":247,"荞麦面":110,"西兰花":34,"菠菜":23,"生菜":15,"黄瓜":16,"西红柿":18,"胡萝卜":39,"青椒":20,"茄子":25,"芦笋":20,"蘑菇":22,"娃娃菜":12,"冬瓜":10,"南瓜":26,"苹果":52,"香蕉":93,"蓝莓":57,"草莓":32,"橙子":47,"猕猴桃":61,"牛油果":160,"杏仁":579,"核桃":654,"花生":567,"橄榄油":884,"醋":31,"酱油":53,"蜂蜜":304,"蒜":27,"洋葱":40,"黑胡椒":25 };
-  var RECIPES = [
-    { name:"西兰花炒鸡胸", ings:["鸡胸肉","西兰花","蒜"], kcal:230, steps:["鸡胸肉切丁，黑胡椒+少许酱油腌10分钟","西兰花焯水1分钟","少油下蒜末，放鸡胸炒至变色，加西兰花翻炒","出锅撒黑胡椒"] },
-    { name:"水煮蛋蔬菜沙拉", ings:["鸡蛋","生菜","西红柿","黄瓜","橄榄油"], kcal:180, steps:["鸡蛋煮熟去壳切块","生菜、黄瓜、西红柿洗净切好","全部拌匀，淋少许橄榄油和黑胡椒"] },
-    { name:"番茄鳕鱼煲", ings:["鳕鱼","西红柿","洋葱"], kcal:200, steps:["西红柿洋葱炒出汁","加水煮成汤底","放鳕鱼片煮熟，撒盐"] },
-    { name:"隔夜燕麦杯", ings:["燕麦","牛奶","蓝莓"], kcal:320, steps:["燕麦+牛奶搅匀","加蓝莓","冷藏过夜，早餐即食"] },
-    { name:"紫薯鸡胸便当", ings:["紫薯","鸡胸肉","西兰花"], kcal:350, steps:["紫薯蒸熟","鸡胸水煮撕条","西兰花焯水，组合即可"] },
-    { name:"清炒虾仁西兰花", ings:["虾","西兰花","蒜"], kcal:160, steps:["虾仁去线焯水","西兰花焯水","少油蒜末爆香，下虾仁西兰花快炒"] },
-    { name:"黑椒芦笋牛肉", ings:["牛肉(瘦)","芦笋","黑胡椒"], kcal:260, steps:["牛肉切条用黑胡椒腌","芦笋切段焯水","少油煎牛肉，加芦笋翻炒"] },
-    { name:"豆腐菌菇汤", ings:["豆腐","蘑菇","菠菜"], kcal:140, steps:["蘑菇切片炒香","加水煮开下豆腐块","最后放菠菜，加盐"] },
-    { name:"玉米鸡胸沙拉", ings:["玉米","鸡胸肉","黄瓜","生菜"], kcal:280, steps:["玉米煮熟取粒","鸡胸水煮撕条","与黄瓜生菜拌匀"] },
-    { name:"南瓜浓汤", ings:["南瓜","洋葱","牛奶"], kcal:200, steps:["南瓜洋葱切块煮软","加牛奶打成泥","回锅温热，少盐"] },
-    { name:"糙米时蔬盅", ings:["糙米","西兰花","胡萝卜","鸡蛋"], kcal:380, steps:["糙米煮熟","西兰花胡萝卜焯水","煎蛋切块，与蔬菜拌入糙米"] },
-    { name:"牛油果蛋吐司", ings:["全麦面包","牛油果","鸡蛋"], kcal:340, steps:["全麦面包烤香","牛油果压泥抹上","放水煮蛋切片"] },
-    { name:"香煎三文鱼芦笋", ings:["三文鱼","芦笋"], kcal:300, steps:["三文鱼少油煎两面","芦笋焯水或同煎","撒黑胡椒海盐"] },
-    { name:"凉拌荞麦面", ings:["荞麦面","毛豆","黄瓜"], kcal:330, steps:["荞麦面煮熟过凉","毛豆煮熟","黄瓜切丝，拌少许酱油醋"] },
-    { name:"蒜蓉清炒时蔬", ings:["西兰花","胡萝卜","蘑菇","蒜"], kcal:110, steps:["蔬菜切片焯水","少油蒜末爆香","下蔬菜快炒，少盐"] },
-    { name:"香蕉蛋白奶昔", ings:["香蕉","牛奶","鸡蛋"], kcal:300, steps:["香蕉切块","加牛奶和熟鸡蛋黄（或蛋白）","打成奶昔"] }
-  ];
-  var customFood = load(KEY.food, {});
-  var foodRows = [];
-  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
-  function kcalOf(name, gram) {
-    name = (name || "").trim();
-    var per100 = FOOD_KCAL[name] != null ? FOOD_KCAL[name] : (customFood[name] != null ? customFood[name] : null);
-    if (per100 == null) return null;
-    return Math.round(per100 / 100 * gram);
+  // ===== 收发文记录板块 =====
+  var records = load(KEY.record, []);
+  if (!Array.isArray(records)) records = [];
+  var recType = "in";
+  function recTab(t) {
+    recType = t;
+    document.querySelectorAll("#recTabs .tab").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === t); });
+    renderRecords();
   }
-  function renderFood() {
-    var box = $("foodList"); box.innerHTML = ""; var total = 0;
-    foodRows.forEach(function (r, i) {
-      var k = kcalOf(r.name, r.gram);
+  document.querySelectorAll("#recTabs .tab").forEach(function (b) { b.onclick = function () { recTab(b.getAttribute("data-tab")); }; });
+  $("recDate").value = todayStr();
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function renderRecords() {
+    var box = $("recList"); box.innerHTML = "";
+    var q = ($("recSearch").value || "").trim().toLowerCase();
+    var rows = records
+      .map(function (r, i) { return { r: r, i: i }; })
+      .filter(function (o) { return o.r.type === recType; })
+      .filter(function (o) {
+        if (!q) return true;
+        return (o.r.name || "").toLowerCase().indexOf(q) >= 0 || (o.r.note || "").toLowerCase().indexOf(q) >= 0;
+      })
+      .sort(function (a, b) { return (b.r.date || "").localeCompare(a.r.date || ""); });
+    if (!rows.length) { box.innerHTML = '<li class="empty">' + (q ? "没有匹配的记录" : "还没有记录，上面添加一条吧～") + '</li>'; }
+    rows.forEach(function (o) {
+      var r = o.r;
       var li = document.createElement("li");
-      var cal = (k == null) ? "未收录" : k + " kcal";
-      if (k != null) total += k;
-      li.innerHTML = '<span class="todo-text"><b>' + escapeHtml(r.name) + '</b> ' + r.gram + 'g · ' + cal + '</span>';
-      if (k == null) {
-        var inp = document.createElement("input"); inp.type = "number"; inp.placeholder = "每100g热量"; inp.className = "foodk";
-        inp.onchange = function () { var v = parseInt(inp.value, 10); if (v > 0) { customFood[r.name] = v; save(KEY.food, customFood); renderFood(); } };
-        li.appendChild(inp);
-      }
-      var del = document.createElement("button"); del.className = "del"; del.textContent = "✕";
-      del.onclick = function () { foodRows.splice(i, 1); renderFood(); };
+      li.className = "rec-item";
+      li.innerHTML = '<span class="rec-date">' + escapeHtml(r.date || "") + '</span>'
+        + '<span class="rec-body"><b class="rec-name">' + escapeHtml(r.name || "") + '</b>'
+        + (r.note ? '<span class="rec-note">' + escapeHtml(r.note) + '</span>' : '') + '</span>';
+      var del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "删除";
+      del.onclick = function () { records.splice(o.i, 1); save(KEY.record, records); renderRecords(); };
       li.appendChild(del); box.appendChild(li);
     });
-    $("calTotal").textContent = total;
+    $("recCount").textContent = rows.length;
   }
-  $("foodAdd").onclick = function () {
-    var n = $("foodName").value.trim(); var g = parseFloat($("foodGram").value);
-    if (!n || !g || g <= 0) { alert("请输入食材和克数"); return; }
-    foodRows.push({ name: n, gram: g }); $("foodName").value = ""; $("foodGram").value = ""; renderFood();
+  $("recAdd").onclick = function () {
+    var date = $("recDate").value || todayStr();
+    var name = $("recName").value.trim();
+    var note = $("recNote").value.trim();
+    if (!name) { alert("请填写文件名"); return; }
+    records.push({ type: recType, date: date, name: name, note: note });
+    save(KEY.record, records);
+    $("recName").value = ""; $("recNote").value = "";
+    renderRecords();
   };
-  $("foodGram").addEventListener("keydown", function (e) { if (e.key === "Enter") $("foodAdd").click(); });
-  $("foodName").addEventListener("keydown", function (e) { if (e.key === "Enter") { $("foodGram").focus(); } });
-  function dietTab(t) {
-    $("calPanel").style.display = (t === "cal") ? "" : "none";
-    $("recipePanel").style.display = (t === "recipe") ? "" : "none";
-    document.querySelectorAll("#dietTabs .tab").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === t); });
-  }
-  document.querySelectorAll("#dietTabs .tab").forEach(function (b) { b.onclick = function () { dietTab(b.getAttribute("data-tab")); }; });
-  function genRecipe() {
-    var raw = $("ingInput").value.trim();
-    if (!raw) { alert("请输入你拥有的食材"); return; }
-    var have = new Set(raw.split(/[\s,，、]+/).map(function (s) { return s.trim(); }).filter(Boolean));
-    var scored = RECIPES.map(function (r) {
-      var hit = r.ings.filter(function (x) { return have.has(x); }).length;
-      return { r: r, hit: hit, total: r.ings.length, miss: r.ings.filter(function (x) { return !have.has(x); }) };
-    }).sort(function (a, b) { return (b.hit - a.hit) || (a.total - b.total); });
-    var box = $("recipeOut"); box.innerHTML = "";
-    var shown = scored.slice(0, 6);
-    if (shown.every(function (s) { return s.hit === 0; })) {
-      box.innerHTML = '<p class="empty">没匹配到现成菜谱。减脂建议：优先「高蛋白+高纤维」组合，如鸡胸肉/鱼虾 + 西兰花/菠菜，少油清蒸或水煮；主食用糙米/红薯替代白米。</p>';
-      return;
-    }
-    shown.forEach(function (s) {
-      var ok = (s.hit === s.total);
-      var card = document.createElement("div"); card.className = "recipe";
-      card.innerHTML = '<div class="rc-head"><b>' + escapeHtml(s.r.name) + '</b><span class="rc-meta">匹配 ' + s.hit + '/' + s.total + (ok ? ' ✅可做' : '') + ' · 约' + s.r.kcal + ' kcal</span></div>'
-        + '<div class="rc-ings">食材：' + s.r.ings.map(function (x) { return have.has(x) ? '<i class="hit">' + escapeHtml(x) + '</i>' : escapeHtml(x); }).join('、') + '</div>'
-        + '<ol class="rc-steps">' + s.r.steps.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ol>'
-        + (s.miss.length ? '<div class="rc-miss">还需：' + s.miss.map(escapeHtml).join('、') + '</div>' : '');
-      box.appendChild(card);
-    });
-  }
-  $("genRecipe").onclick = genRecipe;
-  $("ingInput").addEventListener("keydown", function (e) { if (e.key === "Enter") genRecipe(); });
+  $("recNote").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recAdd").click(); });
+  $("recName").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recNote").focus(); });
+  $("recSearch").addEventListener("input", renderRecords);
+  renderRecords();
 
   // Backup / restore
   $("backupBtn").onclick = function () {
-    var data = { todo: todos, note: notes, link: links, habit: habits, habitList: habitList, habitColors: habitColors, habitIcons: habitIcons, theme: theme, food: customFood, _v: 2 };
+    var data = { todo: todos, note: notes, link: links, habit: habits, habitList: habitList, habitColors: habitColors, habitIcons: habitIcons, theme: theme, record: records, _v: 2 };
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "工作台备份_" + todayStr() + ".json"; a.click(); URL.revokeObjectURL(a.href);
   };
@@ -731,7 +685,7 @@
         habitList.forEach(function (h, i) { if (!habitColors[h]) habitColors[h] = PALETTE[i % PALETTE.length]; if (!habitIcons[h]) habitIcons[h] = DEF_ICONS[h] || "🔵"; });
         if (!curHabit || habitList.indexOf(curHabit) < 0) curHabit = habitList[0] || "";
         renderHabitList(); renderMonth();
-        if (d.food) { customFood = d.food; save(KEY.food, customFood); }
+        if (d.record) { records = d.record; if (!Array.isArray(records)) records = []; save(KEY.record, records); renderRecords(); }
         if (d.theme) { theme = d.theme; applyTheme(theme); }
         alert("恢复成功 ✅");
       } catch (err) { alert("文件格式不正确"); }
