@@ -115,7 +115,7 @@
   .month-bar button.round { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--card-2); color: var(--text); cursor: pointer; font-size: 16px; }
   .month-bar button.round:hover { border-color: var(--accent); color: var(--accent); }
   .colorpick { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-  .colorpick input[type="color"] { width: 26px; height: 26px; border: none; border-radius: 50%; background: transparent !important; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; }
+  .colorpick input[type="color"] { width: 15px; height: 15px; border: none; border-radius: 50%; background: transparent !important; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; }
   .colorpick input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
   .colorpick input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
   .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 16px; }
@@ -506,10 +506,7 @@
     habitList.forEach(function (h) {
       var row = document.createElement("div");
       row.className = "habit-row" + (h === curHabit ? " sel" : "");
-      var icon = document.createElement("span"); icon.className = "habit-icon"; icon.textContent = habitIcons[h] || DEF_ICONS[h] || "🔵"; icon.style.filter = "grayscale(0)";
-      var dot = document.createElement("input");
-      dot.type = "color"; dot.className = "habit-dot"; dot.value = habitColors[h] || "#18a957"; dot.title = "点击修改圆点颜色";
-      dot.addEventListener("input", function () { habitColors[h] = dot.value; save(KEY.habitColors, habitColors); renderMonth(); });
+      var icon = document.createElement("span"); icon.className = "habit-icon"; icon.textContent = habitIcons[h] || DEF_ICONS[h] || "🔵"; icon.title = "在月视图里可改圆点颜色";
       var name = document.createElement("span");
       name.className = "habit-name" + (habitDoneToday(h) ? " done" : "");
       name.textContent = h; name.title = "点我打开月视图";
@@ -532,7 +529,7 @@
           renderHabitList(); renderMonth();
         }
       };
-      row.appendChild(icon); row.appendChild(dot); row.appendChild(name); row.appendChild(open); row.appendChild(del);
+      row.appendChild(icon); row.appendChild(name); row.appendChild(open); row.appendChild(del);
       box.appendChild(row);
     });
   }
