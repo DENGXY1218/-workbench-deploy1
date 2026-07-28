@@ -115,7 +115,7 @@
   .month-bar button.round { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--card-2); color: var(--text); cursor: pointer; font-size: 16px; }
   .month-bar button.round:hover { border-color: var(--accent); color: var(--accent); }
   .colorpick { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-  .colorpick input[type="color"] { width: 34px; height: 34px; border: none; border-radius: 50%; background: transparent !important; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; }
+  .colorpick input[type="color"] { width: 26px; height: 26px; border: none; border-radius: 50%; background: transparent !important; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; }
   .colorpick input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
   .colorpick input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
   .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 16px; }
@@ -148,9 +148,10 @@
   .habit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
   .habit-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card-2); }
   .habit-row.sel { border-color: var(--accent); background: var(--accent-soft); }
-  .habit-dot { width: 24px; height: 24px; border: none; border-radius: 50%; flex: none; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; background: transparent !important; }
+  .habit-dot { width: 20px; height: 20px; border: none; border-radius: 50%; flex: none; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; background: transparent !important; }
   .habit-dot::-webkit-color-swatch-wrapper { padding: 0; }
   .habit-dot::-webkit-color-swatch { border: none; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .habit-icon { font-size: 22px; line-height: 1; flex: none; width: 28px; text-align: center; }
   .habit-name { flex: 1; font-weight: 600; cursor: pointer; word-break: break-word; }
   .habit-name.done { color: var(--green); }
   .habit-name.done::after { content: " ✓"; }
@@ -319,7 +320,7 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  var KEY = { todo: "wb_todo", note: "wb_note", link: "wb_link", habit: "wb_habit", habitList: "wb_habitlist", habitColors: "wb_habitcolors", theme: "wb_theme", view: "wb_view", dot: "wb_dot", food: "wb_food" };
+  var KEY = { todo: "wb_todo", note: "wb_note", link: "wb_link", habit: "wb_habit", habitList: "wb_habitlist", habitColors: "wb_habitcolors", habitIcons: "wb_habiticons", theme: "wb_theme", view: "wb_view", dot: "wb_dot", food: "wb_food" };
   var DEF_HABITS = ["喝水", "运动", "阅读", "早睡"];
   var WK = ["周日","周一","周二","周三","周四","周五","周六"];
 
@@ -444,13 +445,19 @@
   var habits = load(KEY.habit, {});
   var habitList = load(KEY.habitList, DEF_HABITS.slice());
   var PALETTE = ["#18a957","#4f7cff","#e5484d","#f5a623","#9b59b6","#16a085","#e67e22","#3498db","#e84393","#2d3436"];
+  var DEF_ICONS = { "喝水":"💧","运动":"🏃","阅读":"📖","早睡":"😴","跑步":"🏃‍♂️","健身":"💪","冥想":"🧘","早起":"🌅","背单词":"📚","练字":"✍️","记账":"📝","护肤":"🧴","散步":"🚶","瑜伽":"🧘‍♀️","游泳":"🏊","骑行":"🚴","写作":"✒️","学英语":"🇬🇧","听书":"🎧","喝咖啡":"☕" };
   var habitColors = load(KEY.habitColors, null);
+  var habitIcons = load(KEY.habitIcons, null);
   if (!habitColors || typeof habitColors !== "object") {
     habitColors = {};
     var oldDot = load(KEY.dot, null);
     habitList.forEach(function (h, i) { habitColors[h] = oldDot || PALETTE[i % PALETTE.length]; });
   }
-  habitList.forEach(function (h, i) { if (!habitColors[h]) habitColors[h] = PALETTE[i % PALETTE.length]; });
+  if (!habitIcons || typeof habitIcons !== "object") { habitIcons = {}; }
+  habitList.forEach(function (h, i) {
+    if (!habitColors[h]) habitColors[h] = PALETTE[i % PALETTE.length];
+    if (!habitIcons[h]) habitIcons[h] = DEF_ICONS[h] || "🔵";
+  });
   var curHabit = habitList[0] || "";
   var calY = new Date().getFullYear(), calM = new Date().getMonth();
 
@@ -499,6 +506,7 @@
     habitList.forEach(function (h) {
       var row = document.createElement("div");
       row.className = "habit-row" + (h === curHabit ? " sel" : "");
+      var icon = document.createElement("span"); icon.className = "habit-icon"; icon.textContent = habitIcons[h] || DEF_ICONS[h] || "🔵"; icon.style.filter = "grayscale(0)";
       var dot = document.createElement("input");
       dot.type = "color"; dot.className = "habit-dot"; dot.value = habitColors[h] || "#18a957"; dot.title = "点击修改圆点颜色";
       dot.addEventListener("input", function () { habitColors[h] = dot.value; save(KEY.habitColors, habitColors); renderMonth(); });
@@ -517,13 +525,14 @@
           habitList = habitList.filter(function (x) { return x !== h; });
           save(KEY.habitList, habitList);
           delete habitColors[h]; save(KEY.habitColors, habitColors);
+          delete habitIcons[h]; save(KEY.habitIcons, habitIcons);
           for (var dd in habits) { if (habits[dd] && habits[dd][h] !== undefined) delete habits[dd][h]; }
           save(KEY.habit, habits);
           if (curHabit === h) curHabit = habitList[0] || "";
           renderHabitList(); renderMonth();
         }
       };
-      row.appendChild(dot); row.appendChild(name); row.appendChild(open); row.appendChild(del);
+      row.appendChild(icon); row.appendChild(dot); row.appendChild(name); row.appendChild(open); row.appendChild(del);
       box.appendChild(row);
     });
   }
@@ -534,6 +543,8 @@
     if (habitList.indexOf(name) >= 0) { alert("已存在该习惯"); return; }
     habitList.push(name); save(KEY.habitList, habitList);
     habitColors[name] = PALETTE[habitList.length % PALETTE.length]; save(KEY.habitColors, habitColors);
+    if (!habitIcons[name]) { habitIcons[name] = DEF_ICONS[name] || "🔵"; }
+    save(KEY.habitIcons, habitIcons);
     renderHabitList();
   };
   $("openMonth").onclick = function () { if (!curHabit && habitList[0]) curHabit = habitList[0]; openMonth(curHabit); };
@@ -632,7 +643,7 @@
 
   // Backup / restore
   $("backupBtn").onclick = function () {
-    var data = { todo: todos, note: notes, link: links, habit: habits, habitList: habitList, habitColors: habitColors, theme: theme, food: customFood, _v: 2 };
+    var data = { todo: todos, note: notes, link: links, habit: habits, habitList: habitList, habitColors: habitColors, habitIcons: habitIcons, theme: theme, food: customFood, _v: 2 };
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "工作台备份_" + todayStr() + ".json"; a.click(); URL.revokeObjectURL(a.href);
   };
@@ -649,8 +660,10 @@
         if (d.habit) { habits = d.habit; save(KEY.habit, habits); }
         if (d.habitList) { habitList = d.habitList; save(KEY.habitList, habitList); }
         if (d.habitColors) { habitColors = d.habitColors; save(KEY.habitColors, habitColors); }
+        if (d.habitIcons) { habitIcons = d.habitIcons; save(KEY.habitIcons, habitIcons); }
         if (!habitColors || typeof habitColors !== "object") habitColors = {};
-        habitList.forEach(function (h, i) { if (!habitColors[h]) habitColors[h] = PALETTE[i % PALETTE.length]; });
+        if (!habitIcons || typeof habitIcons !== "object") habitIcons = {};
+        habitList.forEach(function (h, i) { if (!habitColors[h]) habitColors[h] = PALETTE[i % PALETTE.length]; if (!habitIcons[h]) habitIcons[h] = DEF_ICONS[h] || "🔵"; });
         if (!curHabit || habitList.indexOf(curHabit) < 0) curHabit = habitList[0] || "";
         renderHabitList(); renderMonth();
         if (d.food) { customFood = d.food; save(KEY.food, customFood); }
