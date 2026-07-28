@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="工作台" />
+<meta name="theme-color" content="#4f7cff" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%234f7cff'/><path d='M20 33 L29 42 L45 24' fill='none' stroke='%23fff' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/></svg>" />
+<title>我的日常工作台</title>
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<style>
+  :root {
+    --bg: #f4f6fb; --card: #ffffff; --card-2: #f8fafc; --text: #1f2430;
+    --muted: #7a8194; --line: #e8ebf2; --accent: #4f7cff; --accent-soft: #eaf0ff;
+    --green: #18a957; --red: #e5484d; --shadow: 0 6px 24px rgba(31,36,48,.06);
+  }
+  html[data-theme="dark"] {
+    --bg: #14161c; --card: #1e212a; --card-2: #232732; --text: #e7eaf1;
+    --muted: #99a1b3; --line: #2c313d; --accent: #6b93ff; --accent-soft: #232b44;
+    --green: #2ec27e; --red: #ff6b6f; --shadow: 0 6px 24px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.5; -webkit-font-smoothing: antialiased; min-height: 100vh;
+  }
+  .app { display: flex; align-items: flex-start; gap: 18px; max-width: 1100px; margin: 0 auto; padding: max(22px, env(safe-area-inset-top)) 18px 60px; }
+
+  /* Sidebar */
+  .sidebar { width: 200px; flex: none; position: sticky; top: 18px; }
+  .brand { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .sidebar nav { display: flex; flex-direction: column; gap: 6px; }
+  .nav-item {
+    text-align: left; border: 1px solid transparent; background: transparent; color: var(--muted);
+    padding: 11px 14px; border-radius: 12px; cursor: pointer; font-size: 15px; font-family: inherit; transition: .15s;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .nav-item:hover { background: var(--card); color: var(--text); }
+  .nav-item.active { background: var(--accent); color: #fff; box-shadow: var(--shadow); }
+  .side-foot { margin-top: 18px; }
+  .icon-btn {
+    border: 1px solid var(--line); background: var(--card); color: var(--text);
+    width: 40px; height: 40px; border-radius: 12px; cursor: pointer; font-size: 18px;
+    display: grid; place-items: center; transition: .15s;
+  }
+  .icon-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+
+  /* Main */
+  .main { flex: 1; min-width: 0; }
+  header.top { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .hi h1 { font-size: 22px; margin: 0; font-weight: 700; }
+  .hi .date { color: var(--muted); font-size: 14px; }
+  .clock { font-variant-numeric: tabular-nums; font-size: 28px; font-weight: 700; color: var(--accent); }
+  .clock small { font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+
+  .view { display: none; }
+  .view.active { display: block; }
+
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; box-shadow: var(--shadow); }
+  .card h2 { font-size: 15px; margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .tag { font-size: 12px; color: var(--muted); font-weight: 500; margin-left: auto; }
+
+  input[type="text"], textarea, input[type="date"], input[type="url"] {
+    flex: 1; border: 1px solid var(--line); background: var(--card-2); color: var(--text);
+    border-radius: 10px; padding: 9px 11px; font-size: 14px; font-family: inherit; outline: none;
+  }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 200px; line-height: 1.6; width: 100%; }
+  .btn { border: none; background: var(--accent); color: #fff; border-radius: 10px; padding: 0 16px; font-size: 14px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: .15s; }
+  .btn:hover { filter: brightness(1.05); }
+  .btn.ghost { background: var(--card-2); color: var(--text); border: 1px solid var(--line); }
+  .btn.sm { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
+
+  .add-row { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  ul.list { list-style: none; margin: 0; padding: 0; overflow: auto; max-height: 420px; }
+  ul.list li { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px dashed var(--line); }
+  ul.list li:last-child { border-bottom: none; }
+  .check { width: 20px; height: 20px; border-radius: 6px; border: 2px solid var(--line); cursor: pointer; flex: none; display: grid; place-items: center; transition: .15s; }
+  .check.done { background: var(--green); border-color: var(--green); color: #fff; font-size: 13px; }
+  .todo-text { flex: 1; word-break: break-word; }
+  .todo-text.done { text-decoration: line-through; color: var(--muted); }
+  .del { color: var(--muted); cursor: pointer; border: none; background: none; font-size: 16px; padding: 2px 6px; }
+  .del:hover { color: var(--red); }
+  .empty { color: var(--muted); font-size: 13px; padding: 10px 4px; }
+
+  .note-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .note-head input[type="date"] { flex: none; max-width: 180px; }
+  .saved { font-size: 12px; color: var(--green); margin-left: auto; opacity: 0; transition: .3s; }
+  .saved.show { opacity: 1; }
+
+  .links-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+  .link-chip { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 12px; background: var(--card-2); border: 1px solid var(--line); text-decoration: none; color: var(--text); position: relative; transition: .15s; }
+  .link-chip:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .link-chip .lk-name { font-weight: 600; font-size: 14px; }
+  .link-chip .lk-url { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .link-chip .lk-del { position: absolute; top: 4px; right: 6px; color: var(--muted); cursor: pointer; font-size: 13px; opacity: 0; }
+  .link-chip:hover .lk-del { opacity: 1; }
+  .link-chip .lk-del:hover { color: var(--red); }
+
+  /* Habit month view */
+  .month-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .month-bar .mlabel { font-weight: 700; font-size: 15px; min-width: 96px; text-align: center; }
+  .month-bar button.round { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--card-2); color: var(--text); cursor: pointer; font-size: 16px; }
+  .month-bar button.round:hover { border-color: var(--accent); color: var(--accent); }
+  .colorpick { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .colorpick input[type="color"] { width: 34px; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-2); cursor: pointer; padding: 2px; }
+  .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 16px; }
+  .cal-dow { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; }
+  .cal-cell { aspect-ratio: 1 / 1; border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: .15s; font-size: 13px; }
+  .cal-cell:hover { border-color: var(--accent); }
+  .cal-cell.today { border-color: var(--accent); font-weight: 700; }
+  .cal-cell.sel { box-shadow: 0 0 0 2px var(--accent) inset; }
+  .cal-cell.blank { border: none; background: transparent; cursor: default; }
+  .cal-cell .dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 3px; }
+  .habit-sel { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  .habit-sel b { color: var(--text); }
+  .habits { display: flex; flex-wrap: wrap; gap: 10px; }
+  .habit { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px; background: var(--card-2); border: 1px solid var(--line); cursor: pointer; user-select: none; transition: .15s; }
+  .habit.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .habit-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .habit-head h2 { margin: 0; }
+  .plus-btn { width: 34px; height: 34px; border-radius: 999px; border: 1px dashed var(--accent); background: var(--accent-soft); color: var(--accent); font-size: 20px; line-height: 1; cursor: pointer; flex: none; }
+  .plus-btn:hover { background: var(--accent); color: #fff; }
+  .dot-color {
+    width: 30px; height: 30px; border: none; border-radius: 50%;
+    cursor: pointer; padding: 0; flex: none; margin-left: auto;
+    appearance: none; -webkit-appearance: none;
+    background: transparent !important;
+  }
+  .dot-color::-webkit-color-swatch-wrapper { padding: 0; }
+  .dot-color::-webkit-color-swatch { border: none; border-radius: 50%; }
+
+  /* Diet */
+  .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+  .tab { border: 1px solid var(--line); background: var(--card-2); color: var(--muted); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 14px; font-family: inherit; }
+  .tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .total { margin-top: 12px; font-size: 15px; } .total b { color: var(--accent); font-size: 18px; }
+  .recipe { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: var(--card-2); }
+  .rc-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .rc-head b { font-size: 15px; } .rc-meta { font-size: 12px; color: var(--muted); }
+  .rc-ings { font-size: 13px; margin: 6px 0; color: var(--text); }
+  .rc-ings .hit { color: var(--green); font-style: normal; font-weight: 600; }
+  .rc-steps { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+  .rc-steps li { margin: 2px 0; }
+  .rc-miss { font-size: 12px; color: var(--accent); margin-top: 4px; }
+  .foodk { width: 120px; flex: none; }
+
+  footer { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  footer .hint { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+  #menuBtn { display: none; }
+  .backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 40; }
+  .backdrop.show { display: block; }
+  @media (max-width: 760px) {
+    .app { flex-direction: column; padding: 14px 12px 50px; }
+    .sidebar {
+      position: fixed; top: 0; left: 0; bottom: 0; height: 100%; width: 230px;
+      background: var(--bg); z-index: 50; padding: calc(18px + env(safe-area-inset-top)) 14px 18px; overflow-y: auto;
+      transform: translateX(-100%); transition: transform .25s ease; box-shadow: 2px 0 16px rgba(0,0,0,.18);
+    }
+    .sidebar.open { transform: translateX(0); }
+    #menuBtn { display: grid; }
+    .clock { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <span>🌿 工作台</span>
+      <button class="icon-btn" id="themeBtn" title="切换主题">🌙</button>
+    </div>
+    <nav id="nav">
+      <button class="nav-item" data-view="note">📝 每日记录</button>
+      <button class="nav-item" data-view="todo">✅ 待办</button>
+      <button class="nav-item" data-view="link">🔗 快捷链接</button>
+      <button class="nav-item" data-view="habit">🌱 习惯打卡</button>
+      <button class="nav-item" data-view="diet">🍱 饮食</button>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <header class="top">
+      <div style="display:flex; align-items:center; gap:10px; min-width:0;">
+        <button class="icon-btn" id="menuBtn" title="菜单">☰</button>
+        <div class="hi">
+          <h1 id="greet">你好</h1>
+          <span class="date" id="todayDate"></span>
+        </div>
+      </div>
+      <div class="clock"><span id="clock">--:--:--</span><small id="sec">周一</small></div>
+    </header>
+
+    <!-- 每日记录 -->
+    <section class="view card" data-view="note">
+      <h2>📝 每日记录</h2>
+      <div class="note-head">
+        <input type="date" id="noteDate" />
+        <span class="saved" id="noteSaved">已保存</span>
+      </div>
+      <textarea id="noteArea" placeholder="随手记点什么，按日期自动保存…"></textarea>
+    </section>
+
+    <!-- 待办 -->
+    <section class="view card" data-view="todo">
+      <h2>✅ 今日待办 <span class="tag" id="todoCount"></span></h2>
+      <div class="add-row">
+        <input type="text" id="todoInput" placeholder="想做点什么…" maxlength="120" />
+        <button class="btn" id="todoAdd">添加</button>
+      </div>
+      <ul class="list" id="todoList"></ul>
+    </section>
+
+    <!-- 快捷链接 -->
+    <section class="view card" data-view="link">
+      <h2>🔗 快捷链接 <span class="tag" id="linkCount"></span></h2>
+      <div class="add-row">
+        <input type="text" id="linkName" placeholder="名称" maxlength="20" style="flex:.6" />
+        <input type="url" id="linkUrl" placeholder="https://…" maxlength="200" style="flex:1.4" />
+        <button class="btn" id="linkAdd">添加</button>
+      </div>
+      <div class="links-grid" id="linksGrid"></div>
+    </section>
+
+    <!-- 习惯打卡 -->
+    <section class="view card" data-view="habit">
+      <div class="habit-head">
+        <h2>🌱 习惯打卡</h2>
+        <div class="habits" id="habitBar"></div>
+        <button class="plus-btn" id="addHabit" title="添加习惯">＋</button>
+        <input type="color" id="dotColor" class="dot-color" value="#18a957" title="小圆点颜色" />
+      </div>
+      <div class="month-bar">
+        <button class="round" id="prevM">‹</button>
+        <span class="mlabel" id="monthLabel"></span>
+        <button class="round" id="nextM">›</button>
+      </div>
+      <div class="calendar" id="calendar"></div>
+      <div class="habit-sel">正在编辑：<b id="habitSelLabel"></b>（点日历日期可切换）</div>
+    </section>
+
+    <!-- 饮食 -->
+    <section class="view card" data-view="diet">
+      <h2>🍱 饮食 <span class="tag">减脂助手</span></h2>
+      <div class="tabs" id="dietTabs">
+        <button class="tab active" data-tab="cal">热量计算</button>
+        <button class="tab" data-tab="recipe">减脂菜谱</button>
+      </div>
+      <div id="calPanel">
+        <div class="add-row">
+          <input type="text" id="foodName" placeholder="食材名，如 鸡胸肉" />
+          <input type="number" id="foodGram" placeholder="克数" min="1" style="max-width:90px" />
+          <button class="btn" id="foodAdd">添加</button>
+        </div>
+        <ul class="list" id="foodList"></ul>
+        <div class="total">总热量：<b id="calTotal">0</b> kcal</div>
+      </div>
+      <div id="recipePanel" style="display:none">
+        <div class="add-row">
+          <input type="text" id="ingInput" placeholder="输入你有的食材，空格或逗号分隔，如 鸡胸肉 西兰花 鸡蛋" />
+          <button class="btn" id="genRecipe">生成菜谱</button>
+        </div>
+        <div id="recipeOut"></div>
+      </div>
+    </section>
+
+    <footer>
+      <button class="btn ghost sm" id="backupBtn">⬇ 备份数据</button>
+      <button class="btn ghost sm" id="restoreBtn">⬆ 恢复数据</button>
+      <input type="file" id="restoreFile" accept="application/json" style="display:none" />
+      <span class="hint">数据保存在本机浏览器，可备份后在手机端恢复以同步</span>
+    </footer>
+  </div>
+</div>
+<div class="backdrop" id="backdrop"></div>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = { todo: "wb_todo", note: "wb_note", link: "wb_link", habit: "wb_habit", habitList: "wb_habitlist", theme: "wb_theme", view: "wb_view", dot: "wb_dot", food: "wb_food" };
+  var DEF_HABITS = ["喝水", "运动", "阅读", "早睡"];
+  var WK = ["周日","周一","周二","周三","周四","周五","周六"];
+
+  function load(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch (e) { return def; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function todayStr(d) { d = d || new Date(); var m = ("0"+(d.getMonth()+1)).slice(-2), day = ("0"+d.getDate()).slice(-2); return d.getFullYear()+"-"+m+"-"+day; }
+  function pad(n) { return ("0"+n).slice(-2); }
+
+  // Theme
+  var theme = load(KEY.theme, "auto");
+  function applyTheme(t) {
+    if (t === "auto") t = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", t);
+    $("themeBtn").textContent = t === "dark" ? "☀️" : "🌙";
+    save(KEY.theme, theme);
+  }
+  applyTheme(theme);
+  $("themeBtn").onclick = function () { var cur = document.documentElement.getAttribute("data-theme"); theme = cur === "dark" ? "light" : "dark"; applyTheme(theme); };
+
+  // Clock
+  function tick() {
+    var d = new Date();
+    $("clock").textContent = pad(d.getHours())+":"+pad(d.getMinutes())+":"+pad(d.getSeconds());
+    $("sec").textContent = WK[d.getDay()];
+    $("todayDate").textContent = todayStr(d) + " " + WK[d.getDay()];
+    var h = d.getHours();
+    $("greet").textContent = (h < 6 ? "夜深了" : h < 12 ? "早上好" : h < 14 ? "中午好" : h < 18 ? "下午好" : "晚上好") + " 👋";
+  }
+  tick(); setInterval(tick, 1000);
+
+  // View switching (default: habit)
+  var activeView = load(KEY.view, "habit");
+  function switchView(v) {
+    activeView = v; save(KEY.view, v);
+    document.querySelectorAll(".view").forEach(function (s) { s.classList.toggle("active", s.getAttribute("data-view") === v); });
+    document.querySelectorAll(".nav-item").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-view") === v); });
+  }
+  function openSidebar() { document.querySelector(".sidebar").classList.add("open"); $("backdrop").classList.add("show"); }
+  function closeSidebar() { document.querySelector(".sidebar").classList.remove("open"); $("backdrop").classList.remove("show"); }
+  $("menuBtn").onclick = function () { var s = document.querySelector(".sidebar"); s.classList.contains("open") ? closeSidebar() : openSidebar(); };
+  $("backdrop").onclick = closeSidebar;
+  document.querySelectorAll(".nav-item").forEach(function (b) { b.onclick = function () { switchView(b.getAttribute("data-view")); if (matchMedia("(max-width:760px)").matches) closeSidebar(); }; });
+  switchView(activeView);
+
+  // Todo
+  var todos = load(KEY.todo, []);
+  function renderTodo() {
+    var ul = $("todoList"); ul.innerHTML = "";
+    if (!todos.length) { ul.innerHTML = '<div class="empty">还没有待办，加一条吧～</div>'; }
+    todos.forEach(function (t) {
+      var li = document.createElement("li");
+      var c = document.createElement("div"); c.className = "check" + (t.done ? " done" : ""); c.textContent = t.done ? "✓" : "";
+      c.onclick = function () { t.done = !t.done; save(KEY.todo, todos); renderTodo(); };
+      var span = document.createElement("span"); span.className = "todo-text" + (t.done ? " done" : ""); span.textContent = t.text;
+      var del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "删除";
+      del.onclick = function () { todos = todos.filter(function (x) { return x !== t; }); save(KEY.todo, todos); renderTodo(); };
+      li.appendChild(c); li.appendChild(span); li.appendChild(del); ul.appendChild(li);
+    });
+    var left = todos.filter(function (t) { return !t.done; }).length;
+    $("todoCount").textContent = todos.length ? (left + " 项待完成 / 共 " + todos.length) : "";
+  }
+  function addTodo() { var v = $("todoInput").value.trim(); if (!v) return; todos.push({ text: v, done: false }); $("todoInput").value = ""; save(KEY.todo, todos); renderTodo(); $("todoInput").focus(); }
+  $("todoAdd").onclick = addTodo;
+  $("todoInput").addEventListener("keydown", function (e) { if (e.key === "Enter") addTodo(); });
+  renderTodo();
+
+  // Notes
+  var notes = load(KEY.note, {});
+  var noteTimer = null;
+  function loadNote(date) { $("noteArea").value = notes[date] || ""; $("noteDate").value = date; }
+  $("noteArea").addEventListener("input", function () {
+    var d = $("noteDate").value || todayStr();
+    notes[d] = $("noteArea").value;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () { save(KEY.note, notes); flashSaved(); }, 500);
+  });
+  $("noteDate").addEventListener("change", function () { loadNote($("noteDate").value); });
+  function flashSaved() { var s = $("noteSaved"); s.classList.add("show"); setTimeout(function () { s.classList.remove("show"); }, 1200); }
+  loadNote(todayStr());
+
+  // Links
+  var links = load(KEY.link, [
+    { name: "WorkBuddy", url: "https://www.codebuddy.cn" },
+    { name: "腾讯文档", url: "https://docs.qq.com" }
+  ]);
+  function renderLinks() {
+    var g = $("linksGrid"); g.innerHTML = "";
+    links.forEach(function (l, i) {
+      var a = document.createElement("a"); a.className = "link-chip"; a.href = l.url; a.target = "_blank"; a.rel = "noopener";
+      a.innerHTML = '<span class="lk-del" title="删除">✕</span><span class="lk-name"></span><span class="lk-url"></span>';
+      a.querySelector(".lk-name").textContent = l.name;
+      a.querySelector(".lk-url").textContent = l.url.replace(/^https?:\/\//, "");
+      a.querySelector(".lk-del").onclick = function (e) { e.preventDefault(); e.stopPropagation(); links.splice(i,1); save(KEY.link, links); renderLinks(); };
+      g.appendChild(a);
+    });
+    $("linkCount").textContent = links.length ? (links.length + " 个") : "";
+  }
+  function addLink() {
+    var n = $("linkName").value.trim(), u = $("linkUrl").value.trim(); if (!n || !u) return;
+    if (!/^https?:\/\//.test(u)) u = "https://" + u;
+    links.push({ name: n, url: u }); $("linkName").value = ""; $("linkUrl").value = ""; save(KEY.link, links); renderLinks();
+  }
+  $("linkAdd").onclick = addLink;
+  $("linkUrl").addEventListener("keydown", function (e) { if (e.key === "Enter") addLink(); });
+  renderLinks();
+
+  // Habits + month view
+  var habits = load(KEY.habit, {});
+  var habitList = load(KEY.habitList, DEF_HABITS.slice());
+  var dotColor = load(KEY.dot, "#18a957");
+  $("dotColor").value = dotColor;
+  var habitSel = todayStr();
+  var calY = new Date().getFullYear(), calM = new Date().getMonth();
+
+  function dayHasHabit(d) { var h = habits[d]; return h && Object.keys(h).some(function (k) { return h[k]; }); }
+
+  function renderMonth() {
+    var cal = $("calendar"); cal.innerHTML = "";
+    ["日","一","二","三","四","五","六"].forEach(function (w) { var d = document.createElement("div"); d.className = "cal-dow"; d.textContent = w; cal.appendChild(d); });
+    var first = new Date(calY, calM, 1).getDay();
+    var days = new Date(calY, calM + 1, 0).getDate();
+    var t = todayStr();
+    for (var i = 0; i < first; i++) { var b = document.createElement("div"); b.className = "cal-cell blank"; cal.appendChild(b); }
+    for (var d = 1; d <= days; d++) {
+      var ds = calY + "-" + pad(calM + 1) + "-" + pad(d);
+      var cell = document.createElement("div");
+      cell.className = "cal-cell" + (ds === t ? " today" : "") + (ds === habitSel ? " sel" : "");
+      cell.appendChild(document.createTextNode(d));
+      if (dayHasHabit(ds)) { var dot = document.createElement("span"); dot.className = "dot"; dot.style.background = dotColor; cell.appendChild(dot); }
+      cell.onclick = function (ds2) { return function () { habitSel = ds2; renderHabits(); renderMonth(); }; }(ds);
+      cal.appendChild(cell);
+    }
+    $("monthLabel").textContent = calY + "年" + (calM + 1) + "月";
+  }
+  function bindLongPress(el, cb) {
+    var timer = null;
+    el.dataset.lp = "0";
+    function start() { el.dataset.lp = "0"; timer = setTimeout(function () { el.dataset.lp = "1"; cb(); }, 550); }
+    function stop() { clearTimeout(timer); }
+    el.addEventListener("mousedown", start);
+    el.addEventListener("mouseup", stop);
+    el.addEventListener("mouseleave", stop);
+    el.addEventListener("touchstart", start, { passive: true });
+    el.addEventListener("touchend", stop);
+    el.addEventListener("touchmove", stop);
+    el.addEventListener("contextmenu", function (e) { e.preventDefault(); el.dataset.lp = "1"; cb(); });
+  }
+  function renderHabits() {
+    $("habitSelLabel").textContent = habitSel;
+    var bar = $("habitBar"); bar.innerHTML = "";
+    var day = habits[habitSel] || {};
+    habitList.forEach(function (h) {
+      var el = document.createElement("div"); el.className = "habit" + (day[h] ? " on" : ""); el.textContent = (day[h] ? "✓ " : "") + h;
+      el.title = "点击打卡 · 长按删除";
+      el.onclick = function () { if (el.dataset.lp === "1") { el.dataset.lp = "0"; return; } if (!habits[habitSel]) habits[habitSel] = {}; habits[habitSel][h] = !habits[habitSel][h]; save(KEY.habit, habits); renderHabits(); renderMonth(); };
+      bindLongPress(el, function () {
+        if (confirm("删除习惯「" + h + "」？\n该习惯在所有日期的打卡记录也会一并清除。")) {
+          habitList = habitList.filter(function (x) { return x !== h; });
+          save(KEY.habitList, habitList);
+          for (var d in habits) { if (habits[d] && habits[d][h] !== undefined) delete habits[d][h]; }
+          save(KEY.habit, habits); renderHabits(); renderMonth();
+        }
+      });
+      bar.appendChild(el);
+    });
+  }
+  $("addHabit").onclick = function () {
+    var name = prompt("新习惯名称：");
+    if (!name) return; name = name.trim(); if (!name) return;
+    if (habitList.indexOf(name) >= 0) { alert("已存在该习惯"); return; }
+    habitList.push(name); save(KEY.habitList, habitList); renderHabits();
+  };
+  $("prevM").onclick = function () { calM--; if (calM < 0) { calM = 11; calY--; } renderMonth(); };
+  $("nextM").onclick = function () { calM++; if (calM > 11) { calM = 0; calY++; } renderMonth(); };
+  $("dotColor").addEventListener("input", function () { dotColor = this.value; save(KEY.dot, dotColor); renderMonth(); });
+  renderMonth(); renderHabits();
+
+  // ===== 饮食板块 =====
+  var FOOD_KCAL = { "鸡胸肉":133,"鸡腿肉":121,"鸡蛋":144,"蛋白":60,"牛肉(瘦)":106,"牛里脊":125,"猪肉(瘦)":143,"虾":99,"三文鱼":139,"鳕鱼":88,"金枪鱼":116,"豆腐":76,"黄豆":359,"毛豆":131,"牛奶":54,"脱脂牛奶":34,"无糖酸奶":59,"燕麦":389,"糙米":111,"米饭":116,"红薯":99,"紫薯":86,"玉米":112,"全麦面包":247,"荞麦面":110,"西兰花":34,"菠菜":23,"生菜":15,"黄瓜":16,"西红柿":18,"胡萝卜":39,"青椒":20,"茄子":25,"芦笋":20,"蘑菇":22,"娃娃菜":12,"冬瓜":10,"南瓜":26,"苹果":52,"香蕉":93,"蓝莓":57,"草莓":32,"橙子":47,"猕猴桃":61,"牛油果":160,"杏仁":579,"核桃":654,"花生":567,"橄榄油":884,"醋":31,"酱油":53,"蜂蜜":304,"蒜":27,"洋葱":40,"黑胡椒":25 };
+  var RECIPES = [
+    { name:"西兰花炒鸡胸", ings:["鸡胸肉","西兰花","蒜"], kcal:230, steps:["鸡胸肉切丁，黑胡椒+少许酱油腌10分钟","西兰花焯水1分钟","少油下蒜末，放鸡胸炒至变色，加西兰花翻炒","出锅撒黑胡椒"] },
+    { name:"水煮蛋蔬菜沙拉", ings:["鸡蛋","生菜","西红柿","黄瓜","橄榄油"], kcal:180, steps:["鸡蛋煮熟去壳切块","生菜、黄瓜、西红柿洗净切好","全部拌匀，淋少许橄榄油和黑胡椒"] },
+    { name:"番茄鳕鱼煲", ings:["鳕鱼","西红柿","洋葱"], kcal:200, steps:["西红柿洋葱炒出汁","加水煮成汤底","放鳕鱼片煮熟，撒盐"] },
+    { name:"隔夜燕麦杯", ings:["燕麦","牛奶","蓝莓"], kcal:320, steps:["燕麦+牛奶搅匀","加蓝莓","冷藏过夜，早餐即食"] },
+    { name:"紫薯鸡胸便当", ings:["紫薯","鸡胸肉","西兰花"], kcal:350, steps:["紫薯蒸熟","鸡胸水煮撕条","西兰花焯水，组合即可"] },
+    { name:"清炒虾仁西兰花", ings:["虾","西兰花","蒜"], kcal:160, steps:["虾仁去线焯水","西兰花焯水","少油蒜末爆香，下虾仁西兰花快炒"] },
+    { name:"黑椒芦笋牛肉", ings:["牛肉(瘦)","芦笋","黑胡椒"], kcal:260, steps:["牛肉切条用黑胡椒腌","芦笋切段焯水","少油煎牛肉，加芦笋翻炒"] },
+    { name:"豆腐菌菇汤", ings:["豆腐","蘑菇","菠菜"], kcal:140, steps:["蘑菇切片炒香","加水煮开下豆腐块","最后放菠菜，加盐"] },
+    { name:"玉米鸡胸沙拉", ings:["玉米","鸡胸肉","黄瓜","生菜"], kcal:280, steps:["玉米煮熟取粒","鸡胸水煮撕条","与黄瓜生菜拌匀"] },
+    { name:"南瓜浓汤", ings:["南瓜","洋葱","牛奶"], kcal:200, steps:["南瓜洋葱切块煮软","加牛奶打成泥","回锅温热，少盐"] },
+    { name:"糙米时蔬盅", ings:["糙米","西兰花","胡萝卜","鸡蛋"], kcal:380, steps:["糙米煮熟","西兰花胡萝卜焯水","煎蛋切块，与蔬菜拌入糙米"] },
+    { name:"牛油果蛋吐司", ings:["全麦面包","牛油果","鸡蛋"], kcal:340, steps:["全麦面包烤香","牛油果压泥抹上","放水煮蛋切片"] },
+    { name:"香煎三文鱼芦笋", ings:["三文鱼","芦笋"], kcal:300, steps:["三文鱼少油煎两面","芦笋焯水或同煎","撒黑胡椒海盐"] },
+    { name:"凉拌荞麦面", ings:["荞麦面","毛豆","黄瓜"], kcal:330, steps:["荞麦面煮熟过凉","毛豆煮熟","黄瓜切丝，拌少许酱油醋"] },
+    { name:"蒜蓉清炒时蔬", ings:["西兰花","胡萝卜","蘑菇","蒜"], kcal:110, steps:["蔬菜切片焯水","少油蒜末爆香","下蔬菜快炒，少盐"] },
+    { name:"香蕉蛋白奶昔", ings:["香蕉","牛奶","鸡蛋"], kcal:300, steps:["香蕉切块","加牛奶和熟鸡蛋黄（或蛋白）","打成奶昔"] }
+  ];
+  var customFood = load(KEY.food, {});
+  var foodRows = [];
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function kcalOf(name, gram) {
+    name = (name || "").trim();
+    var per100 = FOOD_KCAL[name] != null ? FOOD_KCAL[name] : (customFood[name] != null ? customFood[name] : null);
+    if (per100 == null) return null;
+    return Math.round(per100 / 100 * gram);
+  }
+  function renderFood() {
+    var box = $("foodList"); box.innerHTML = ""; var total = 0;
+    foodRows.forEach(function (r, i) {
+      var k = kcalOf(r.name, r.gram);
+      var li = document.createElement("li");
+      var cal = (k == null) ? "未收录" : k + " kcal";
+      if (k != null) total += k;
+      li.innerHTML = '<span class="todo-text"><b>' + escapeHtml(r.name) + '</b> ' + r.gram + 'g · ' + cal + '</span>';
+      if (k == null) {
+        var inp = document.createElement("input"); inp.type = "number"; inp.placeholder = "每100g热量"; inp.className = "foodk";
+        inp.onchange = function () { var v = parseInt(inp.value, 10); if (v > 0) { customFood[r.name] = v; save(KEY.food, customFood); renderFood(); } };
+        li.appendChild(inp);
+      }
+      var del = document.createElement("button"); del.className = "del"; del.textContent = "✕";
+      del.onclick = function () { foodRows.splice(i, 1); renderFood(); };
+      li.appendChild(del); box.appendChild(li);
+    });
+    $("calTotal").textContent = total;
+  }
+  $("foodAdd").onclick = function () {
+    var n = $("foodName").value.trim(); var g = parseFloat($("foodGram").value);
+    if (!n || !g || g <= 0) { alert("请输入食材和克数"); return; }
+    foodRows.push({ name: n, gram: g }); $("foodName").value = ""; $("foodGram").value = ""; renderFood();
+  };
+  $("foodGram").addEventListener("keydown", function (e) { if (e.key === "Enter") $("foodAdd").click(); });
+  $("foodName").addEventListener("keydown", function (e) { if (e.key === "Enter") { $("foodGram").focus(); } });
+  function dietTab(t) {
+    $("calPanel").style.display = (t === "cal") ? "" : "none";
+    $("recipePanel").style.display = (t === "recipe") ? "" : "none";
+    document.querySelectorAll("#dietTabs .tab").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === t); });
+  }
+  document.querySelectorAll("#dietTabs .tab").forEach(function (b) { b.onclick = function () { dietTab(b.getAttribute("data-tab")); }; });
+  function genRecipe() {
+    var raw = $("ingInput").value.trim();
+    if (!raw) { alert("请输入你拥有的食材"); return; }
+    var have = new Set(raw.split(/[\s,，、]+/).map(function (s) { return s.trim(); }).filter(Boolean));
+    var scored = RECIPES.map(function (r) {
+      var hit = r.ings.filter(function (x) { return have.has(x); }).length;
+      return { r: r, hit: hit, total: r.ings.length, miss: r.ings.filter(function (x) { return !have.has(x); }) };
+    }).sort(function (a, b) { return (b.hit - a.hit) || (a.total - b.total); });
+    var box = $("recipeOut"); box.innerHTML = "";
+    var shown = scored.slice(0, 6);
+    if (shown.every(function (s) { return s.hit === 0; })) {
+      box.innerHTML = '<p class="empty">没匹配到现成菜谱。减脂建议：优先「高蛋白+高纤维」组合，如鸡胸肉/鱼虾 + 西兰花/菠菜，少油清蒸或水煮；主食用糙米/红薯替代白米。</p>';
+      return;
+    }
+    shown.forEach(function (s) {
+      var ok = (s.hit === s.total);
+      var card = document.createElement("div"); card.className = "recipe";
+      card.innerHTML = '<div class="rc-head"><b>' + escapeHtml(s.r.name) + '</b><span class="rc-meta">匹配 ' + s.hit + '/' + s.total + (ok ? ' ✅可做' : '') + ' · 约' + s.r.kcal + ' kcal</span></div>'
+        + '<div class="rc-ings">食材：' + s.r.ings.map(function (x) { return have.has(x) ? '<i class="hit">' + escapeHtml(x) + '</i>' : escapeHtml(x); }).join('、') + '</div>'
+        + '<ol class="rc-steps">' + s.r.steps.map(function (t) { return '<li>' + escapeHtml(t) + '</li>'; }).join('') + '</ol>'
+        + (s.miss.length ? '<div class="rc-miss">还需：' + s.miss.map(escapeHtml).join('、') + '</div>' : '');
+      box.appendChild(card);
+    });
+  }
+  $("genRecipe").onclick = genRecipe;
+  $("ingInput").addEventListener("keydown", function (e) { if (e.key === "Enter") genRecipe(); });
+
+  // Backup / restore
+  $("backupBtn").onclick = function () {
+    var data = { todo: todos, note: notes, link: links, habit: habits, habitList: habitList, theme: theme, dot: dotColor, food: customFood, _v: 2 };
+    var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "工作台备份_" + todayStr() + ".json"; a.click(); URL.revokeObjectURL(a.href);
+  };
+  $("restoreBtn").onclick = function () { $("restoreFile").click(); };
+  $("restoreFile").onchange = function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var d = JSON.parse(r.result);
+        if (d.todo) { todos = d.todo; save(KEY.todo, todos); renderTodo(); }
+        if (d.note) { notes = d.note; save(KEY.note, notes); loadNote($("noteDate").value || todayStr()); }
+        if (d.link) { links = d.link; save(KEY.link, links); renderLinks(); }
+        if (d.habit) { habits = d.habit; save(KEY.habit, habits); renderHabits(); renderMonth(); }
+        if (d.habitList) { habitList = d.habitList; save(KEY.habitList, habitList); renderHabits(); }
+        if (d.dot) { dotColor = d.dot; $("dotColor").value = dotColor; save(KEY.dot, dotColor); renderMonth(); }
+        if (d.food) { customFood = d.food; save(KEY.food, customFood); }
+        if (d.theme) { theme = d.theme; applyTheme(theme); }
+        alert("恢复成功 ✅");
+      } catch (err) { alert("文件格式不正确"); }
+    };
+    r.readAsText(f); e.target.value = "";
+  };
+})();
+</script>
+<script>
+  if (location.protocol.startsWith('http')) {
+    window.addEventListener('load', function () {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+      }
+    });
+  }
+</script>
+</body>
+</html>
