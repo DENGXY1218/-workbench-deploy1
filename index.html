@@ -142,6 +142,25 @@
   .dot-color::-webkit-color-swatch-wrapper { padding: 0; }
   .dot-color::-webkit-color-swatch { border: none; border-radius: 50%; }
 
+  /* Habit rows (per-habit month views) */
+  .habit-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+  .habit-row { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card-2); }
+  .habit-row.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .habit-dot { width: 24px; height: 24px; border: none; border-radius: 50%; flex: none; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; background: transparent !important; }
+  .habit-dot::-webkit-color-swatch-wrapper { padding: 0; }
+  .habit-dot::-webkit-color-swatch { border: none; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
+  .habit-name { flex: 1; font-weight: 600; cursor: pointer; word-break: break-word; }
+  .habit-name.done { color: var(--green); }
+  .habit-name.done::after { content: " ✓"; }
+  .habit-open { border: 1px solid var(--accent); background: var(--accent-soft); color: var(--accent); border-radius: 8px; padding: 5px 12px; font-size: 13px; cursor: pointer; font-family: inherit; white-space: nowrap; }
+  .habit-open:hover { background: var(--accent); color: #fff; }
+  .habit-del { color: var(--muted); cursor: pointer; border: none; background: none; font-size: 16px; padding: 2px 6px; }
+  .habit-del:hover { color: var(--red); }
+  .open-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+  .open-hint { font-size: 13px; color: var(--muted); }
+  .month-panel { margin-top: 4px; }
+  .cal-cell.on { background: var(--accent-soft); border-color: var(--accent); }
+
   /* Diet */
   .tabs { display: flex; gap: 8px; margin-bottom: 14px; }
   .tab { border: 1px solid var(--line); background: var(--card-2); color: var(--muted); padding: 8px 14px; border-radius: 999px; cursor: pointer; font-size: 14px; font-family: inherit; }
@@ -241,17 +260,23 @@
     <section class="view card" data-view="habit">
       <div class="habit-head">
         <h2>🌱 习惯打卡</h2>
-        <div class="habits" id="habitBar"></div>
         <button class="plus-btn" id="addHabit" title="添加习惯">＋</button>
-        <input type="color" id="dotColor" class="dot-color" value="#18a957" title="小圆点颜色" />
       </div>
-      <div class="month-bar">
-        <button class="round" id="prevM">‹</button>
-        <span class="mlabel" id="monthLabel"></span>
-        <button class="round" id="nextM">›</button>
+      <div class="habit-list" id="habitList"></div>
+      <div class="open-wrap">
+        <button class="btn ghost sm" id="openMonth">📅 打开月视图</button>
+        <span class="open-hint" id="openHint">选择习惯后点「打开月视图」</span>
       </div>
-      <div class="calendar" id="calendar"></div>
-      <div class="habit-sel">正在编辑：<b id="habitSelLabel"></b>（点日历日期可切换）</div>
+      <div class="month-panel" id="monthPanel" style="display:none">
+        <div class="month-bar">
+          <button class="round" id="prevM">‹</button>
+          <span class="mlabel" id="monthLabel"></span>
+          <button class="round" id="nextM">›</button>
+          <span class="colorpick">圆点色 <input type="color" id="dotColor" value="#18a957" title="小圆点颜色" /></span>
+        </div>
+        <div class="calendar" id="calendar"></div>
+        <div class="habit-sel">正在查看：<b id="habitSelLabel"></b>（点日历日期可打卡 / 取消）</div>
+      </div>
     </section>
 
     <!-- 饮食 -->
@@ -292,7 +317,7 @@
 (function () {
   "use strict";
   var $ = function (id) { return document.getElementById(id); };
-  var KEY = { todo: "wb_todo", note: "wb_note", link: "wb_link", habit: "wb_habit", habitList: "wb_habitlist", theme: "wb_theme", view: "wb_view", dot: "wb_dot", food: "wb_food" };
+  var KEY = { todo: "wb_todo", note: "wb_note", link: "wb_link", habit: "wb_habit", habitList: "wb_habitlist", habitColors: "wb_habitcolors", theme: "wb_theme", view: "wb_view", dot: "wb_dot", food: "wb_food" };
   var DEF_HABITS = ["喝水", "运动", "阅读", "早睡"];
   var WK = ["周日","周一","周二","周三","周四","周五","周六"];
 
@@ -413,15 +438,31 @@
   $("linkUrl").addEventListener("keydown", function (e) { if (e.key === "Enter") addLink(); });
   renderLinks();
 
-  // Habits + month view
+  // Habits + per-habit month view
   var habits = load(KEY.habit, {});
   var habitList = load(KEY.habitList, DEF_HABITS.slice());
-  var dotColor = load(KEY.dot, "#18a957");
-  $("dotColor").value = dotColor;
-  var habitSel = todayStr();
+  var PALETTE = ["#18a957","#4f7cff","#e5484d","#f5a623","#9b59b6","#16a085","#e67e22","#3498db","#e84393","#2d3436"];
+  var habitColors = load(KEY.habitColors, null);
+  if (!habitColors || typeof habitColors !== "object") {
+    habitColors = {};
+    var oldDot = load(KEY.dot, null);
+    habitList.forEach(function (h, i) { habitColors[h] = oldDot || PALETTE[i % PALETTE.length]; });
+  }
+  habitList.forEach(function (h, i) { if (!habitColors[h]) habitColors[h] = PALETTE[i % PALETTE.length]; });
+  var curHabit = habitList[0] || "";
   var calY = new Date().getFullYear(), calM = new Date().getMonth();
 
-  function dayHasHabit(d) { var h = habits[d]; return h && Object.keys(h).some(function (k) { return h[k]; }); }
+  function habitDoneToday(h) { var t = todayStr(); return !!(habits[t] && habits[t][h]); }
+
+  function openMonth(h) {
+    if (!h) return;
+    curHabit = h;
+    $("dotColor").value = habitColors[h] || "#18a957";
+    renderHabitList();
+    $("monthPanel").style.display = "";
+    $("openHint").textContent = "正在查看「" + h + "」";
+    renderMonth();
+  }
 
   function renderMonth() {
     var cal = $("calendar"); cal.innerHTML = "";
@@ -429,60 +470,75 @@
     var first = new Date(calY, calM, 1).getDay();
     var days = new Date(calY, calM + 1, 0).getDate();
     var t = todayStr();
+    var color = habitColors[curHabit] || "#18a957";
     for (var i = 0; i < first; i++) { var b = document.createElement("div"); b.className = "cal-cell blank"; cal.appendChild(b); }
     for (var d = 1; d <= days; d++) {
       var ds = calY + "-" + pad(calM + 1) + "-" + pad(d);
+      var on = !!(habits[ds] && habits[ds][curHabit]);
       var cell = document.createElement("div");
-      cell.className = "cal-cell" + (ds === t ? " today" : "") + (ds === habitSel ? " sel" : "");
+      cell.className = "cal-cell" + (ds === t ? " today" : "") + (on ? " on" : "");
       cell.appendChild(document.createTextNode(d));
-      if (dayHasHabit(ds)) { var dot = document.createElement("span"); dot.className = "dot"; dot.style.background = dotColor; cell.appendChild(dot); }
-      cell.onclick = function (ds2) { return function () { habitSel = ds2; renderHabits(); renderMonth(); }; }(ds);
+      if (on) { var dot = document.createElement("span"); dot.className = "dot"; dot.style.background = color; cell.appendChild(dot); }
+      cell.onclick = function (ds2) { return function () {
+        if (!habits[ds2]) habits[ds2] = {};
+        habits[ds2][curHabit] = !habits[ds2][curHabit];
+        if (!habits[ds2][curHabit]) delete habits[ds2][curHabit];
+        save(KEY.habit, habits); renderHabitList(); renderMonth();
+      }; }(ds);
       cal.appendChild(cell);
     }
     $("monthLabel").textContent = calY + "年" + (calM + 1) + "月";
+    $("habitSelLabel").textContent = curHabit || "—";
   }
-  function bindLongPress(el, cb) {
-    var timer = null;
-    el.dataset.lp = "0";
-    function start() { el.dataset.lp = "0"; timer = setTimeout(function () { el.dataset.lp = "1"; cb(); }, 550); }
-    function stop() { clearTimeout(timer); }
-    el.addEventListener("mousedown", start);
-    el.addEventListener("mouseup", stop);
-    el.addEventListener("mouseleave", stop);
-    el.addEventListener("touchstart", start, { passive: true });
-    el.addEventListener("touchend", stop);
-    el.addEventListener("touchmove", stop);
-    el.addEventListener("contextmenu", function (e) { e.preventDefault(); el.dataset.lp = "1"; cb(); });
-  }
-  function renderHabits() {
-    $("habitSelLabel").textContent = habitSel;
-    var bar = $("habitBar"); bar.innerHTML = "";
-    var day = habits[habitSel] || {};
+
+  function renderHabitList() {
+    var box = $("habitList"); box.innerHTML = "";
+    if (!habitList.length) { box.innerHTML = '<div class="empty">还没有习惯，点右上角 ＋ 添加一个吧～</div>'; }
     habitList.forEach(function (h) {
-      var el = document.createElement("div"); el.className = "habit" + (day[h] ? " on" : ""); el.textContent = (day[h] ? "✓ " : "") + h;
-      el.title = "点击打卡 · 长按删除";
-      el.onclick = function () { if (el.dataset.lp === "1") { el.dataset.lp = "0"; return; } if (!habits[habitSel]) habits[habitSel] = {}; habits[habitSel][h] = !habits[habitSel][h]; save(KEY.habit, habits); renderHabits(); renderMonth(); };
-      bindLongPress(el, function () {
-        if (confirm("删除习惯「" + h + "」？\n该习惯在所有日期的打卡记录也会一并清除。")) {
+      var row = document.createElement("div");
+      row.className = "habit-row" + (h === curHabit ? " sel" : "");
+      var dot = document.createElement("input");
+      dot.type = "color"; dot.className = "habit-dot"; dot.value = habitColors[h] || "#18a957"; dot.title = "点击修改圆点颜色";
+      dot.addEventListener("input", function () { habitColors[h] = dot.value; save(KEY.habitColors, habitColors); renderMonth(); });
+      var name = document.createElement("span");
+      name.className = "habit-name" + (habitDoneToday(h) ? " done" : "");
+      name.textContent = h; name.title = "点我打开月视图";
+      name.onclick = function () { openMonth(h); };
+      var open = document.createElement("button");
+      open.className = "habit-open"; open.textContent = "打开"; open.title = "打开月视图";
+      open.onclick = function (e) { e.stopPropagation(); openMonth(h); };
+      var del = document.createElement("button");
+      del.className = "habit-del"; del.textContent = "✕"; del.title = "删除习惯";
+      del.onclick = function (e) {
+        e.stopPropagation();
+        if (confirm("删除习惯「" + h + "」？\n所有日期的打卡记录会一并清除。")) {
           habitList = habitList.filter(function (x) { return x !== h; });
           save(KEY.habitList, habitList);
-          for (var d in habits) { if (habits[d] && habits[d][h] !== undefined) delete habits[d][h]; }
-          save(KEY.habit, habits); renderHabits(); renderMonth();
+          delete habitColors[h]; save(KEY.habitColors, habitColors);
+          for (var dd in habits) { if (habits[dd] && habits[dd][h] !== undefined) delete habits[dd][h]; }
+          save(KEY.habit, habits);
+          if (curHabit === h) curHabit = habitList[0] || "";
+          renderHabitList(); renderMonth();
         }
-      });
-      bar.appendChild(el);
+      };
+      row.appendChild(dot); row.appendChild(name); row.appendChild(open); row.appendChild(del);
+      box.appendChild(row);
     });
   }
+
   $("addHabit").onclick = function () {
     var name = prompt("新习惯名称：");
     if (!name) return; name = name.trim(); if (!name) return;
     if (habitList.indexOf(name) >= 0) { alert("已存在该习惯"); return; }
-    habitList.push(name); save(KEY.habitList, habitList); renderHabits();
+    habitList.push(name); save(KEY.habitList, habitList);
+    habitColors[name] = PALETTE[habitList.length % PALETTE.length]; save(KEY.habitColors, habitColors);
+    renderHabitList();
   };
+  $("openMonth").onclick = function () { if (!curHabit && habitList[0]) curHabit = habitList[0]; openMonth(curHabit); };
   $("prevM").onclick = function () { calM--; if (calM < 0) { calM = 11; calY--; } renderMonth(); };
   $("nextM").onclick = function () { calM++; if (calM > 11) { calM = 0; calY++; } renderMonth(); };
-  $("dotColor").addEventListener("input", function () { dotColor = this.value; save(KEY.dot, dotColor); renderMonth(); });
-  renderMonth(); renderHabits();
+  $("dotColor").addEventListener("input", function () { if (!curHabit) return; habitColors[curHabit] = this.value; save(KEY.habitColors, habitColors); renderHabitList(); renderMonth(); });
+  renderHabitList(); renderMonth();
 
   // ===== 饮食板块 =====
   var FOOD_KCAL = { "鸡胸肉":133,"鸡腿肉":121,"鸡蛋":144,"蛋白":60,"牛肉(瘦)":106,"牛里脊":125,"猪肉(瘦)":143,"虾":99,"三文鱼":139,"鳕鱼":88,"金枪鱼":116,"豆腐":76,"黄豆":359,"毛豆":131,"牛奶":54,"脱脂牛奶":34,"无糖酸奶":59,"燕麦":389,"糙米":111,"米饭":116,"红薯":99,"紫薯":86,"玉米":112,"全麦面包":247,"荞麦面":110,"西兰花":34,"菠菜":23,"生菜":15,"黄瓜":16,"西红柿":18,"胡萝卜":39,"青椒":20,"茄子":25,"芦笋":20,"蘑菇":22,"娃娃菜":12,"冬瓜":10,"南瓜":26,"苹果":52,"香蕉":93,"蓝莓":57,"草莓":32,"橙子":47,"猕猴桃":61,"牛油果":160,"杏仁":579,"核桃":654,"花生":567,"橄榄油":884,"醋":31,"酱油":53,"蜂蜜":304,"蒜":27,"洋葱":40,"黑胡椒":25 };
@@ -574,7 +630,7 @@
 
   // Backup / restore
   $("backupBtn").onclick = function () {
-    var data = { todo: todos, note: notes, link: links, habit: habits, habitList: habitList, theme: theme, dot: dotColor, food: customFood, _v: 2 };
+    var data = { todo: todos, note: notes, link: links, habit: habits, habitList: habitList, habitColors: habitColors, theme: theme, food: customFood, _v: 2 };
     var blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     var a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "工作台备份_" + todayStr() + ".json"; a.click(); URL.revokeObjectURL(a.href);
   };
@@ -588,9 +644,13 @@
         if (d.todo) { todos = d.todo; save(KEY.todo, todos); renderTodo(); }
         if (d.note) { notes = d.note; save(KEY.note, notes); loadNote($("noteDate").value || todayStr()); }
         if (d.link) { links = d.link; save(KEY.link, links); renderLinks(); }
-        if (d.habit) { habits = d.habit; save(KEY.habit, habits); renderHabits(); renderMonth(); }
-        if (d.habitList) { habitList = d.habitList; save(KEY.habitList, habitList); renderHabits(); }
-        if (d.dot) { dotColor = d.dot; $("dotColor").value = dotColor; save(KEY.dot, dotColor); renderMonth(); }
+        if (d.habit) { habits = d.habit; save(KEY.habit, habits); }
+        if (d.habitList) { habitList = d.habitList; save(KEY.habitList, habitList); }
+        if (d.habitColors) { habitColors = d.habitColors; save(KEY.habitColors, habitColors); }
+        if (!habitColors || typeof habitColors !== "object") habitColors = {};
+        habitList.forEach(function (h, i) { if (!habitColors[h]) habitColors[h] = PALETTE[i % PALETTE.length]; });
+        if (!curHabit || habitList.indexOf(curHabit) < 0) curHabit = habitList[0] || "";
+        renderHabitList(); renderMonth();
         if (d.food) { customFood = d.food; save(KEY.food, customFood); }
         if (d.theme) { theme = d.theme; applyTheme(theme); }
         alert("恢复成功 ✅");
