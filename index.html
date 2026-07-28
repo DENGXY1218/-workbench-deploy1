@@ -159,6 +159,12 @@
   .habit-open:hover { background: var(--accent); color: #fff; }
   .habit-del { color: var(--muted); cursor: pointer; border: none; background: none; font-size: 16px; padding: 2px 6px; }
   .habit-del:hover { color: var(--red); }
+  .icon-edit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 4px 2px 10px; position: relative; }
+  .icon-edit-cur { font-size: 26px; line-height: 1; width: 34px; text-align: center; }
+  .icon-grid { position: absolute; top: 42px; left: 0; z-index: 5; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.14); max-width: 340px; }
+  .icon-grid button { font-size: 20px; line-height: 1; width: 32px; height: 32px; border: 1px solid transparent; border-radius: 8px; background: var(--card-2); cursor: pointer; }
+  .icon-grid button:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .icon-grid button.on { background: var(--accent); border-color: var(--accent); }
   .open-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
   .open-hint { font-size: 13px; color: var(--muted); }
   .month-panel { margin-top: 4px; }
@@ -276,6 +282,11 @@
           <span class="mlabel" id="monthLabel"></span>
           <button class="round" id="nextM">›</button>
           <span class="colorpick"><input type="color" id="dotColor" value="#18a957" title="小圆点颜色" /></span>
+        </div>
+        <div class="icon-edit">
+          <span class="icon-edit-cur" id="curIcon">🔵</span>
+          <button class="btn ghost sm" id="editIcon">✎ 改图标</button>
+          <div class="icon-grid" id="iconGrid" style="display:none"></div>
         </div>
         <div class="calendar" id="calendar"></div>
         <div class="habit-sel">正在查看：<b id="habitSelLabel"></b>（点日历日期可打卡 / 取消）</div>
@@ -445,7 +456,29 @@
   var habits = load(KEY.habit, {});
   var habitList = load(KEY.habitList, DEF_HABITS.slice());
   var PALETTE = ["#18a957","#4f7cff","#e5484d","#f5a623","#9b59b6","#16a085","#e67e22","#3498db","#e84393","#2d3436"];
-  var DEF_ICONS = { "喝水":"💧","运动":"🏃","阅读":"📖","早睡":"😴","跑步":"🏃‍♂️","健身":"💪","冥想":"🧘","早起":"🌅","背单词":"📚","练字":"✍️","记账":"📝","护肤":"🧴","散步":"🚶","瑜伽":"🧘‍♀️","游泳":"🏊","骑行":"🚴","写作":"✒️","学英语":"🇬🇧","听书":"🎧","喝咖啡":"☕" };
+  // 习惯默认图标（按名称自动匹配）
+  var DEF_ICONS = {
+    "喝水":"💧","运动":"🏃","阅读":"📖","早睡":"😴","跑步":"🏃‍♂️","健身":"💪","冥想":"🧘","早起":"🌅",
+    "背单词":"📚","练字":"✍️","记账":"📝","护肤":"🧴","散步":"🚶","瑜伽":"🧘‍♀️","游泳":"🏊","骑行":"🚴",
+    "写作":"✒️","学英语":"🇬🇧","听书":"🎧","喝咖啡":"☕","吃饭":"🍚","减肥":"🥗","吃药":"💊","量体重":"⚖️",
+    "晒太阳":"🌞","午睡":"😪","整理":"🧹","洗漱":"🪥","洗澡":"🛁","听音乐":"🎵","弹琴":"🎹","唱歌":"🎤",
+    "画画":"🎨","摄影":"📷","钓鱼":"🎣","旅行":"✈️","看书":"📚","学习":"📖","复习":"📒","刷题":"✏️",
+    "上课":"🏫","上班":"💼","开会":"📊","编程":"💻","写日记":"📔","复盘":"📝","计划":"📅","目标":"🎯",
+    "存钱":"🐷","理财":"📈","吃水果":"🍎","吃蔬菜":"🥦","吃早餐":"🥞","戒烟":"🚭","戒酒":"🍺","戒糖":"🍬",
+    "拉伸":"🤸","打球":"🏀","足球":"⚽","篮球":"🏀","排球":"🏐","网球":"🎾","羽毛球":"🏸","乒乓球":"🏓",
+    "登山":"🧗","徒步":"🥾","跳舞":"💃","书法":"🖌️","围棋":"⚫","象棋":"♟️","拼图":"🧩","养花":"🌸",
+    "种草":"🌱","浇水":"🪴","喂猫":"🐱","遛狗":"🐕","读经":"📜","祷告":"🙏","志愿":"🤝","感恩":"🙏",
+    "深呼吸":"🌬️","正念":"🧠","不熬夜":"🌛","少手机":"📵","断网":"🌐"
+  };
+  // 改图标时可选的预设图标池
+  var ICON_POOL = [
+    "💧","🏃","📖","😴","🏃‍♂️","💪","🧘","🌅","📚","✍️","📝","🧴","🚶","🧘‍♀️","🏊","🚴",
+    "✒️","🇬🇧","🎧","☕","🍚","🥗","💊","⚖️","🌞","😪","🧹","🪥","🛁","🎵","🎹","🎤",
+    "🎨","📷","🎣","✈️","📒","✏️","🏫","💼","📊","💻","📔","📅","🎯","🐷","📈","🍎",
+    "🥦","🥞","🚭","🍺","🍬","🤸","🏀","⚽","🏐","🎾","🏸","🏓","🧗","🥾","💃","🖌️",
+    "⚫","♟️","🧩","🌸","🌱","🪴","🐱","🐕","📜","🙏","🤝","🌬️","🧠","🌛","📵","🌐",
+    "🔵","🌟","⭐","❤️","🔥","🌈","⚡","🌿"
+  ];
   var habitColors = load(KEY.habitColors, null);
   var habitIcons = load(KEY.habitIcons, null);
   if (!habitColors || typeof habitColors !== "object") {
@@ -467,10 +500,31 @@
     if (!h) return;
     curHabit = h;
     $("dotColor").value = habitColors[h] || "#18a957";
+    var ic = habitIcons[h] || DEF_ICONS[h] || "🔵";
+    $("curIcon").textContent = ic;
+    buildIconGrid(ic);
+    $("iconGrid").style.display = "none";
     renderHabitList();
     $("monthPanel").style.display = "";
     $("openHint").textContent = "正在查看「" + h + "」";
     renderMonth();
+  }
+
+  function buildIconGrid(cur) {
+    var grid = $("iconGrid"); grid.innerHTML = "";
+    ICON_POOL.forEach(function (em) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = em;
+      if (em === cur) b.className = "on";
+      b.onclick = function (e) {
+        e.stopPropagation();
+        habitIcons[curHabit] = em; save(KEY.habitIcons, habitIcons);
+        $("curIcon").textContent = em;
+        buildIconGrid(em);
+        renderHabitList();
+      };
+      grid.appendChild(b);
+    });
   }
 
   function renderMonth() {
@@ -548,6 +602,14 @@
   $("prevM").onclick = function () { calM--; if (calM < 0) { calM = 11; calY--; } renderMonth(); };
   $("nextM").onclick = function () { calM++; if (calM > 11) { calM = 0; calY++; } renderMonth(); };
   $("dotColor").addEventListener("input", function () { if (!curHabit) return; habitColors[curHabit] = this.value; save(KEY.habitColors, habitColors); renderHabitList(); renderMonth(); });
+  $("editIcon").onclick = function (e) {
+    e.stopPropagation();
+    var g = $("iconGrid");
+    g.style.display = (g.style.display === "none" || !g.style.display) ? "grid" : "none";
+  };
+  document.addEventListener("click", function (e) {
+    if (e.target.id !== "editIcon" && !e.target.closest(".icon-grid")) { $("iconGrid").style.display = "none"; }
+  });
   renderHabitList(); renderMonth();
 
   // ===== 饮食板块 =====
