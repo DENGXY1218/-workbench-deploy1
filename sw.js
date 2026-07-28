@@ -1,8 +1,7 @@
-const CACHE = 'wb-pwa-v1';
-const ASSETS = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
+const CACHE = 'wb-pwa-v2';
 
 self.addEventListener('install', (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  self.skipWaiting();
 });
 
 self.addEventListener('activate', (e) => {
@@ -16,15 +15,16 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached ||
-      fetch(e.request)
-        .then((resp) => {
-          const copy = resp.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, copy));
-          return resp;
-        })
-        .catch(() => caches.match('index.html'))
-    )
+    fetch(e.request)
+      .then((resp) => {
+        const copy = resp.clone();
+        caches.open(CACHE).then((c) => c.put(e.request, copy));
+        return resp;
+      })
+      .catch(() => caches.match(e.request).then((c) => c || caches.match('index.html')))
   );
+});
+
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
