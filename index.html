@@ -115,7 +115,9 @@
   .month-bar button.round { width: 32px; height: 32px; border-radius: 9px; border: 1px solid var(--line); background: var(--card-2); color: var(--text); cursor: pointer; font-size: 16px; }
   .month-bar button.round:hover { border-color: var(--accent); color: var(--accent); }
   .colorpick { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-  .colorpick input[type="color"] { width: 34px; height: 30px; border: 1px solid var(--line); border-radius: 8px; background: var(--card-2); cursor: pointer; padding: 2px; }
+  .colorpick input[type="color"] { width: 34px; height: 34px; border: none; border-radius: 50%; background: transparent !important; cursor: pointer; padding: 0; appearance: none; -webkit-appearance: none; }
+  .colorpick input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+  .colorpick input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.12); }
   .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 16px; }
   .cal-dow { text-align: center; font-size: 12px; color: var(--muted); padding: 4px 0; }
   .cal-cell { aspect-ratio: 1 / 1; border-radius: 10px; border: 1px solid var(--line); background: var(--card-2); display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; position: relative; transition: .15s; font-size: 13px; }
@@ -272,7 +274,7 @@
           <button class="round" id="prevM">‹</button>
           <span class="mlabel" id="monthLabel"></span>
           <button class="round" id="nextM">›</button>
-          <span class="colorpick">圆点色 <input type="color" id="dotColor" value="#18a957" title="小圆点颜色" /></span>
+          <span class="colorpick"><input type="color" id="dotColor" value="#18a957" title="小圆点颜色" /></span>
         </div>
         <div class="calendar" id="calendar"></div>
         <div class="habit-sel">正在查看：<b id="habitSelLabel"></b>（点日历日期可打卡 / 取消）</div>
