@@ -174,7 +174,10 @@
   <aside class="sidebar">
     <div class="brand">
       <span>🌿 工作台</span>
-      <button class="icon-btn" id="themeBtn" title="切换主题">🌙</button>
+      <div class="brand-btns">
+        <button class="icon-btn" id="fsBtn" title="全屏 / 退出全屏">⛶</button>
+        <button class="icon-btn" id="themeBtn" title="切换主题">🌙</button>
+      </div>
     </div>
     <nav id="nav">
       <button class="nav-item" data-view="note">📝 每日记录</button>
@@ -302,6 +305,20 @@
   }
   applyTheme(theme);
   $("themeBtn").onclick = function () { var cur = document.documentElement.getAttribute("data-theme"); theme = cur === "dark" ? "light" : "dark"; applyTheme(theme); };
+
+  // Fullscreen toggle
+  var fsBtn = $("fsBtn");
+  function toggleFs() {
+    var d = document, de = d.documentElement;
+    var fsEl = d.fullscreenElement || d.webkitFullscreenElement;
+    var req = de.requestFullscreen || de.webkitRequestFullscreen;
+    var exit = d.exitFullscreen || d.webkitExitFullscreen;
+    try {
+      if (!fsEl && req) { var p = req.call(de); if (p && p.catch) p.catch(function () {}); }
+      else if (exit) { exit.call(d); }
+    } catch (e) {}
+  }
+  if (fsBtn) fsBtn.onclick = toggleFs;
 
   // Clock
   function tick() {
