@@ -159,9 +159,10 @@
   .habit-open:hover { background: var(--accent); color: #fff; }
   .habit-del { color: var(--muted); cursor: pointer; border: none; background: none; font-size: 16px; padding: 2px 6px; }
   .habit-del:hover { color: var(--red); }
-  .icon-edit { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 4px 2px 10px; position: relative; }
-  .icon-edit-cur { font-size: 26px; line-height: 1; width: 34px; text-align: center; }
-  .icon-grid { position: absolute; top: 42px; left: 0; z-index: 5; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.14); max-width: 340px; }
+  .cur-icon-wrap { position: relative; display: inline-flex; align-items: center; }
+  .cur-icon { font-size: 24px; line-height: 1; cursor: pointer; padding: 2px 4px; border-radius: 8px; user-select: none; -webkit-user-select: none; }
+  .cur-icon:hover { background: var(--accent-soft); }
+  .icon-grid { position: absolute; top: 100%; right: 0; z-index: 5; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.14); max-width: 340px; }
   .icon-grid button { font-size: 20px; line-height: 1; width: 32px; height: 32px; border: 1px solid transparent; border-radius: 8px; background: var(--card-2); cursor: pointer; }
   .icon-grid button:hover { background: var(--accent-soft); border-color: var(--accent); }
   .icon-grid button.on { background: var(--accent); border-color: var(--accent); }
@@ -281,12 +282,8 @@
           <button class="round" id="prevM">‹</button>
           <span class="mlabel" id="monthLabel"></span>
           <button class="round" id="nextM">›</button>
+          <span class="cur-icon-wrap"><span class="cur-icon" id="curIcon" title="长按修改图标">🔵</span><div class="icon-grid" id="iconGrid" style="display:none"></div></span>
           <span class="colorpick"><input type="color" id="dotColor" value="#18a957" title="小圆点颜色" /></span>
-        </div>
-        <div class="icon-edit">
-          <span class="icon-edit-cur" id="curIcon">🔵</span>
-          <button class="btn ghost sm" id="editIcon">✎ 改图标</button>
-          <div class="icon-grid" id="iconGrid" style="display:none"></div>
         </div>
         <div class="calendar" id="calendar"></div>
         <div class="habit-sel">正在查看：<b id="habitSelLabel"></b>（点日历日期可打卡 / 取消）</div>
@@ -602,13 +599,22 @@
   $("prevM").onclick = function () { calM--; if (calM < 0) { calM = 11; calY--; } renderMonth(); };
   $("nextM").onclick = function () { calM++; if (calM > 11) { calM = 0; calY++; } renderMonth(); };
   $("dotColor").addEventListener("input", function () { if (!curHabit) return; habitColors[curHabit] = this.value; save(KEY.habitColors, habitColors); renderHabitList(); renderMonth(); });
-  $("editIcon").onclick = function (e) {
-    e.stopPropagation();
-    var g = $("iconGrid");
-    g.style.display = (g.style.display === "none" || !g.style.display) ? "grid" : "none";
-  };
+  // 长按图标打开选图网格
+  (function () {
+    var el = $("curIcon");
+    var timer = null;
+    function start() { timer = setTimeout(function () { buildIconGrid(el.textContent); $("iconGrid").style.display = "grid"; }, 550); }
+    function stop() { clearTimeout(timer); }
+    el.addEventListener("mousedown", start);
+    el.addEventListener("mouseup", stop);
+    el.addEventListener("mouseleave", stop);
+    el.addEventListener("touchstart", start, { passive: true });
+    el.addEventListener("touchend", stop);
+    el.addEventListener("touchmove", stop);
+    el.addEventListener("contextmenu", function (e) { e.preventDefault(); buildIconGrid(el.textContent); $("iconGrid").style.display = "grid"; });
+  })();
   document.addEventListener("click", function (e) {
-    if (e.target.id !== "editIcon" && !e.target.closest(".icon-grid")) { $("iconGrid").style.display = "none"; }
+    if (!e.target.closest(".icon-grid") && e.target.id !== "curIcon") { $("iconGrid").style.display = "none"; }
   });
   renderHabitList(); renderMonth();
 
