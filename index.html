@@ -301,7 +301,11 @@
         <button class="btn" id="recAdd">添加</button>
       </div>
       <div class="add-row">
-        <input type="search" id="recSearch" placeholder="🔍 搜索文件名或备注…" style="flex:1" />
+        <input type="text" id="recFrom" placeholder="发件人" style="flex:1" />
+        <input type="text" id="recTo" placeholder="收件人" style="flex:1" />
+      </div>
+      <div class="add-row">
+        <input type="search" id="recSearch" placeholder="🔍 搜索文件名/备注/收发件人…" style="flex:1" />
       </div>
       <ul class="list" id="recList"></ul>
       <div class="total">共 <b id="recCount">0</b> 条</div>
@@ -630,7 +634,8 @@
       .filter(function (o) { return o.r.type === recType; })
       .filter(function (o) {
         if (!q) return true;
-        return (o.r.name || "").toLowerCase().indexOf(q) >= 0 || (o.r.note || "").toLowerCase().indexOf(q) >= 0;
+        return (o.r.name || "").toLowerCase().indexOf(q) >= 0 || (o.r.note || "").toLowerCase().indexOf(q) >= 0
+          || (o.r.from || "").toLowerCase().indexOf(q) >= 0 || (o.r.to || "").toLowerCase().indexOf(q) >= 0;
       })
       .sort(function (a, b) { return (b.r.date || "").localeCompare(a.r.date || ""); });
     if (!rows.length) { box.innerHTML = '<li class="empty">' + (q ? "没有匹配的记录" : "还没有记录，上面添加一条吧～") + '</li>'; }
@@ -640,7 +645,8 @@
       li.className = "rec-item";
       li.innerHTML = '<span class="rec-date">' + escapeHtml(r.date || "") + '</span>'
         + '<span class="rec-body"><b class="rec-name">' + escapeHtml(r.name || "") + '</b>'
-        + (r.note ? '<span class="rec-note">' + escapeHtml(r.note) + '</span>' : '') + '</span>';
+        + (r.note ? '<span class="rec-note">' + escapeHtml(r.note) + '</span>' : '')
+        + (r.from || r.to ? '<span class="rec-note">' + (r.from ? '发件人：' + escapeHtml(r.from) : '') + (r.from && r.to ? '　' : '') + (r.to ? '收件人：' + escapeHtml(r.to) : '') + '</span>' : '') + '</span>';
       var del = document.createElement("button"); del.className = "del"; del.textContent = "✕"; del.title = "删除";
       del.onclick = function () { records.splice(o.i, 1); save(KEY.record, records); renderRecords(); };
       li.appendChild(del); box.appendChild(li);
@@ -651,14 +657,18 @@
     var date = $("recDate").value || todayStr();
     var name = $("recName").value.trim();
     var note = $("recNote").value.trim();
+    var from = $("recFrom").value.trim();
+    var to = $("recTo").value.trim();
     if (!name) { alert("请填写文件名"); return; }
-    records.push({ type: recType, date: date, name: name, note: note });
+    records.push({ type: recType, date: date, name: name, note: note, from: from, to: to });
     save(KEY.record, records);
-    $("recName").value = ""; $("recNote").value = "";
+    $("recName").value = ""; $("recNote").value = ""; $("recFrom").value = ""; $("recTo").value = "";
     renderRecords();
   };
-  $("recNote").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recAdd").click(); });
   $("recName").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recNote").focus(); });
+  $("recNote").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recFrom").focus(); });
+  $("recFrom").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recTo").focus(); });
+  $("recTo").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recAdd").click(); });
   $("recSearch").addEventListener("input", renderRecords);
   renderRecords();
 
