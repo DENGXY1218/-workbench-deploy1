@@ -621,10 +621,15 @@
   function recTab(t) {
     recType = t;
     document.querySelectorAll("#recTabs .tab").forEach(function (b) { b.classList.toggle("active", b.getAttribute("data-tab") === t); });
+    var isIn = (t === "in");
+    $("recFrom").style.display = isIn ? "" : "none";
+    $("recTo").style.display = isIn ? "none" : "";
+    if (isIn) $("recTo").value = ""; else $("recFrom").value = "";
     renderRecords();
   }
   document.querySelectorAll("#recTabs .tab").forEach(function (b) { b.onclick = function () { recTab(b.getAttribute("data-tab")); }; });
   $("recDate").value = todayStr();
+  recTab(recType);
   function escapeHtml(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
   function renderRecords() {
     var box = $("recList"); box.innerHTML = "";
@@ -666,8 +671,8 @@
     renderRecords();
   };
   $("recName").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recNote").focus(); });
-  $("recNote").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recFrom").focus(); });
-  $("recFrom").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recTo").focus(); });
+  $("recNote").addEventListener("keydown", function (e) { if (e.key === "Enter") { (recType === "in" ? $("recFrom") : $("recTo")).focus(); } });
+  $("recFrom").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recAdd").click(); });
   $("recTo").addEventListener("keydown", function (e) { if (e.key === "Enter") $("recAdd").click(); });
   $("recSearch").addEventListener("input", renderRecords);
   renderRecords();
